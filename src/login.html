@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — EduStream Analytics</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap');
+
+    :root {
+      --bg: #0c0e14;
+      --surface: #13161f;
+      --surface2: #1a1e2a;
+      --border: #252a38;
+      --accent: #00e5a0;
+      --accent2: #ff6b35;
+      --text: #e8ecf4;
+      --muted: #6b7590;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    .logo {
+      font-family: 'Space Mono', monospace;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .logo span {
+      color: var(--accent);
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 28px;
+    }
+
+    label {
+      display: block;
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    input {
+      width: 100%;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      outline: none;
+      font-size: 14px;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+    }
+
+    button {
+      width: 100%;
+      background: var(--accent);
+      color: #07100c;
+      border: none;
+      border-radius: 8px;
+      padding: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .error {
+      display: none;
+      margin-top: 14px;
+      color: var(--accent2);
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .hint {
+      margin-top: 20px;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .hint strong {
+      color: var(--accent);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="login-card">
+    <div class="logo">Edu<span>Stream</span> Analytics</div>
+    <div class="subtitle">Acesso ao dashboard de medição de software</div>
+
+    <form onsubmit="validarLogin(event)">
+      <label for="email">E-mail</label>
+      <input type="email" id="email" placeholder="admin@edustream.com" required>
+
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" placeholder="Digite sua senha" required>
+
+      <button type="submit">Entrar no dashboard</button>
+
+      <p class="error" id="mensagemErro">
+        E-mail ou senha inválidos.
+      </p>
+    </form>
+
+    <div class="hint">
+      Usuário de teste: <strong>admin@edustream.com</strong><br>
+      Senha de teste: <strong>123456</strong>
+    </div>
+  </div>
+
+  <script>
+    function validarLogin(event) {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("senha").value;
+      const mensagemErro = document.getElementById("mensagemErro");
+
+      if (email === "admin@edustream.com" && senha === "123456") {
+        sessionStorage.setItem("edustreamLoggedIn", "true");
+        window.location.href = "edustream_dash2.0.html";
+      } else {
+        mensagemErro.style.display = "block";
+      }
+    }
+  </script>
+</body>
+  <script>
+  if (sessionStorage.getItem("edustreamLoggedIn") !== "true") {
+    window.location.href = "login.html";
+  }
+</script>
+</html>
