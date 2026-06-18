@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduStream — Dashboard de Medição</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,300&display=swap');
+  :root {
+    --bg:#0c0e14;--surface:#13161f;--surface2:#1a1e2a;--border:#252a38;
+    --accent:#00e5a0;--accent2:#ff6b35;--accent3:#7c5cfc;--accent4:#ffd166;
+    --text:#e8ecf4;--muted:#6b7590;
+    --squad1:#00e5a0;--squad2:#ff6b35;--squad3:#7c5cfc;--squad4:#ffd166;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+  header{padding:20px 32px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);}
+  .logo{font-family:'Space Mono',monospace;font-size:18px;font-weight:700;letter-spacing:-.5px;}
+  .logo span{color:var(--accent);}
+  .subtitle{font-size:11px;color:var(--muted);margin-top:2px;font-family:'Space Mono',monospace;}
+  .badge{background:rgba(0,229,160,.1);color:var(--accent);border:1px solid rgba(0,229,160,.25);padding:4px 12px;border-radius:20px;font-size:11px;font-family:'Space Mono',monospace;}
+  .filters-bar{padding:14px 32px;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:center;flex-wrap:wrap;}
+  .filter-label{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-right:4px;}
+  .filter-group{display:flex;align-items:center;gap:8px;}
+  select{background:var(--surface);color:var(--text);border:1px solid var(--border);padding:6px 12px;border-radius:6px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;outline:none;transition:border-color .2s;}
+  select:hover,select:focus{border-color:var(--accent);}
+  .btn-reset{background:transparent;color:var(--muted);border:1px solid var(--border);padding:6px 14px;border-radius:6px;font-family:'Space Mono',monospace;font-size:11px;cursor:pointer;transition:all .2s;}
+  .btn-reset:hover{color:var(--accent);border-color:var(--accent);}
+  main{padding:24px 32px;display:flex;flex-direction:column;gap:24px;}
+  .kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s;}
+  .kpi-card:hover{border-color:var(--accent);}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+  .kpi-card.c1::before{background:var(--squad1);}
+  .kpi-card.c2::before{background:var(--squad2);}
+  .kpi-card.c3::before{background:var(--squad3);}
+  .kpi-card.c4::before{background:var(--squad4);}
+  .kpi-title{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-family:'Space Mono',monospace;}
+  .kpi-value{font-family:'Space Mono',monospace;font-size:32px;font-weight:700;margin:8px 0 4px;line-height:1;}
+  .kpi-sub{font-size:11px;color:var(--muted);}
+  .kpi-meta{font-size:10px;margin-top:4px;}
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;}
+  .chart-card.full{grid-column:1/-1;}
+  .chart-title{font-family:'Space Mono',monospace;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+  .chart-title .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;}
+  .chart-wrap{position:relative;height:260px;}
+  .chart-wrap.tall{height:320px;}
+  .meta-line{font-size:11px;color:var(--muted);margin-bottom:12px;font-family:'Space Mono',monospace;}
+  .meta-line span{color:var(--accent4);}
+  .table-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+  .table-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+  .table-wrap{overflow-x:auto;max-height:340px;overflow-y:auto;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{background:var(--surface2);color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.8px;padding:10px 14px;text-align:left;position:sticky;top:0;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap;}
+  th:hover{color:var(--accent);}
+  td{padding:9px 14px;border-bottom:1px solid rgba(37,42,56,.5);white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:var(--surface2);}
+  .squad-pill{padding:2px 10px;border-radius:12px;font-size:11px;font-weight:500;}
+  .pill-gam{background:rgba(0,229,160,.12);color:var(--squad1);}
+  .pill-pla{background:rgba(255,107,53,.12);color:var(--squad2);}
+  .pill-ass{background:rgba(124,92,252,.12);color:var(--squad3);}
+  .pill-for{background:rgba(255,209,102,.12);color:var(--squad4);}
+  .num{font-family:'Space Mono',monospace;font-size:12px;}
+  .bar-inline{display:inline-block;height:6px;border-radius:3px;vertical-align:middle;margin-left:6px;opacity:.7;}
+  .row-count{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);}
+  .dre-ok{color:#00e5a0;} .dre-warn{color:#ffd166;} .dre-bad{color:#ff6b35;}
+  footer{padding:16px 32px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;display:flex;justify-content:space-between;}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <div class="logo">Edu<span>Stream</span> Analytics</div>
+    <div class="subtitle">Estudo de Caso 4 — Medição de Software · Grupo 12 · Efraim Nantes, Thiago Nogueira, Pedro Henrique Mendes</div>
+  </div>
+  <div class="badge">300 registros · 4 squads</div>
+</header>
+<div class="filters-bar">
+  <div class="filter-group">
+    <span class="filter-label">Mês</span>
+    <select id="filterMes"><option value="">Todos</option></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Squad</span>
+    <select id="filterSquad">
+      <option value="">Todas</option>
+      <option value="Gamificação">Gamificação</option>
+      <option value="Player de Vídeo">Player de Vídeo</option>
+      <option value="Assinaturas">Assinaturas</option>
+      <option value="Fórum">Fórum</option>
+    </select>
+  </div>
+  <button class="btn-reset" onclick="resetFilters()">↺ Limpar</button>
+</div>
+<main>
+  <div class="kpi-row">
+    <div class="kpi-card c1">
+      <div class="kpi-title">Total Pontos de Função</div>
+      <div class="kpi-value" id="kpi-pf" style="color:var(--squad1)">—</div>
+      <div class="kpi-sub">PF entregues (seleção)</div>
+    </div>
+    <div class="kpi-card c2">
+      <div class="kpi-title">DRE Médio Global</div>
+      <div class="kpi-value" id="kpi-dre" style="color:var(--squad2)">—</div>
+      <div class="kpi-sub" id="kpi-dre-sub">Meta: acima de 85%</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-title">Bugs em Produção</div>
+      <div class="kpi-value" id="kpi-bugs" style="color:var(--squad3)">—</div>
+      <div class="kpi-sub">Total acumulado</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-title">Produtividade Média</div>
+      <div class="kpi-value" id="kpi-prod" style="color:var(--squad4)">—</div>
+      <div class="kpi-sub">Horas/PF — quanto menor, melhor</div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot"></span>Produtividade por Squad (Horas/PF)</div>
+      <div class="meta-line">Menor = melhor. Meta: <span>&lt; 10 h/PF</span></div>
+      <div class="chart-wrap"><canvas id="chartProd"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--accent2)"></span>DRE × Cobertura de Testes</div>
+      <div class="meta-line">DRE = Bugs Hom / (Bugs Hom + Bugs Prod) × 100. Meta DRE: <span>≥ 85%</span></div>
+      <div class="chart-wrap"><canvas id="chartDreCob"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--accent3)"></span>Distribuição de Bugs em Produção</div>
+      <div class="chart-wrap"><canvas id="chartBugsPie"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:var(--accent4)"></span>Volume × Qualidade (PF vs Densidade Defeitos)</div>
+      <div class="meta-line">Dens. Defeitos = (Bugs Hom + Bugs Prod) / PF. Bolha = cobertura</div>
+      <div class="chart-wrap"><canvas id="chartScatter"></canvas></div>
+    </div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card full">
+      <div class="chart-title"><span class="dot" style="background:var(--accent2)"></span>Densidade de Defeitos por Mês e Squad</div>
+      <div class="chart-wrap tall"><canvas id="chartDensity"></canvas></div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <div class="chart-title" style="margin:0"><span class="dot"></span>Registros Detalhados — Métricas Derivadas</div>
+      <div class="row-count" id="row-count">300 linhas</div>
+    </div>
+    <div class="table-wrap">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)">Mês ↕</th>
+            <th onclick="sortTable(1)">Squad ↕</th>
+            <th onclick="sortTable(2)">Horas ↕</th>
+            <th onclick="sortTable(3)">PF ↕</th>
+            <th onclick="sortTable(4)">Bugs Hom. ↕</th>
+            <th onclick="sortTable(5)">Bugs Prod. ↕</th>
+            <th onclick="sortTable(6)">Cobertura% ↕</th>
+            <th onclick="sortTable(7)" title="Horas/PF — menor é melhor">Produtiv. ↕</th>
+            <th onclick="sortTable(8)" title="(BugsHom+BugsProd)/PF">Dens.Def. ↕</th>
+            <th onclick="sortTable(9)" title="BugsHom/(BugsHom+BugsProd)*100 — meta ≥85%">DRE% ↕</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+<footer>
+  <span>EduStream · Grupo 12 · Efraim Nantes, Thiago Nogueira, Pedro Henrique Mendes</span>
+  <span>Fórmulas: Produtividade = Horas/PF · Densidade = (BugsHom+BugsProd)/PF · DRE = BugsHom/(BugsHom+BugsProd)×100 · Meta DRE ≥ 85%</span>
+</footer>
+
+<script>
+const MONTH_ORDER=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+const SQUAD_COLORS={"Gamificação":"#00e5a0","Player de Vídeo":"#ff6b35","Assinaturas":"#7c5cfc","Fórum":"#ffd166"};
+const PILL_MAP={"Gamificação":"pill-gam","Player de Vídeo":"pill-pla","Assinaturas":"pill-ass","Fórum":"pill-for"};
+const SQUADS=["Gamificação","Player de Vídeo","Assinaturas","Fórum"];
+
+const CSV_LINES = `Dezembro,Assinaturas,417,41,30,3,82.1
+Novembro,Player de Vídeo,428,27,19,13,59.9
+Maio,Assinaturas,365,34,22,4,89.5
+Março,Gamificação,348,55,24,7,66.1
+Maio,Fórum,456,40,14,7,73.7
+Fevereiro,Assinaturas,384,34,22,2,89.1
+Junho,Assinaturas,357,43,29,4,91.0
+Março,Gamificação,409,65,27,8,70.8
+Setembro,Player de Vídeo,445,25,19,20,59.4
+Agosto,Assinaturas,395,30,28,3,86.1
+Fevereiro,Fórum,439,33,22,9,76.7
+Outubro,Fórum,403,40,19,11,68.2
+Outubro,Assinaturas,353,44,21,5,88.5
+Dezembro,Player de Vídeo,444,40,16,14,68.3
+Janeiro,Player de Vídeo,477,25,15,17,68.3
+Agosto,Fórum,471,39,24,10,77.3
+Março,Assinaturas,444,40,20,5,86.3
+Setembro,Assinaturas,357,38,21,3,93.8
+Fevereiro,Fórum,478,47,19,12,71.2
+Janeiro,Gamificação,322,56,28,4,64.1
+Março,Gamificação,367,62,22,7,67.3
+Janeiro,Player de Vídeo,533,40,13,20,59.6
+Setembro,Gamificação,419,62,22,6,67.8
+Outubro,Assinaturas,417,44,23,2,94.4
+Janeiro,Fórum,400,30,15,12,77.9
+Julho,Fórum,368,36,23,12,66.1
+Janeiro,Player de Vídeo,493,33,17,20,64.2
+Setembro,Gamificação,340,60,27,5,61.8
+Outubro,Fórum,469,32,23,12,68.4
+Maio,Gamificação,331,57,29,6,71.3
+Agosto,Assinaturas,406,38,18,4,91.2
+Agosto,Player de Vídeo,463,28,14,16,64.3
+Julho,Fórum,484,34,17,12,71.6
+Outubro,Player de Vídeo,446,34,12,20,65.1
+Dezembro,Fórum,394,34,14,8,68.6
+Julho,Assinaturas,460,33,27,2,92.5
+Janeiro,Player de Vídeo,424,29,17,15,57.6
+Novembro,Fórum,409,38,19,6,68.2
+Maio,Gamificação,351,49,31,8,67.1
+Março,Assinaturas,486,38,20,3,87.3
+Abril,Assinaturas,466,36,19,4,88.4
+Fevereiro,Gamificação,331,49,22,5,70.9
+Janeiro,Gamificação,404,62,22,8,70.2
+Setembro,Fórum,483,41,23,12,71.0
+Junho,Player de Vídeo,428,28,22,22,55.4
+Maio,Player de Vídeo,444,35,22,21,60.0
+Maio,Fórum,438,31,24,7,73.7
+Abril,Assinaturas,422,41,29,3,91.0
+Maio,Player de Vídeo,425,34,10,12,64.1
+Fevereiro,Fórum,491,31,22,11,69.1
+Novembro,Player de Vídeo,458,33,13,19,55.8
+Outubro,Gamificação,325,64,34,3,65.4
+Setembro,Fórum,390,35,17,7,67.2
+Fevereiro,Gamificação,309,46,31,4,69.1
+Agosto,Player de Vídeo,418,25,20,12,62.5
+Julho,Player de Vídeo,401,25,16,13,61.4
+Dezembro,Gamificação,388,54,26,8,70.0
+Janeiro,Fórum,449,32,23,10,65.6
+Junho,Fórum,371,46,22,8,74.7
+Fevereiro,Player de Vídeo,451,39,21,19,60.1
+Novembro,Assinaturas,432,42,23,5,84.1
+Setembro,Assinaturas,409,39,26,2,83.1
+Junho,Player de Vídeo,387,31,12,14,64.4
+Abril,Player de Vídeo,412,32,19,17,64.0
+Setembro,Player de Vídeo,427,38,16,22,56.4
+Abril,Player de Vídeo,487,37,18,20,56.1
+Julho,Gamificação,313,54,22,7,60.5
+Julho,Player de Vídeo,449,32,11,12,58.3
+Julho,Gamificação,337,55,35,7,61.9
+Outubro,Player de Vídeo,384,33,11,18,56.8
+Novembro,Player de Vídeo,508,30,13,21,62.3
+Maio,Player de Vídeo,530,25,10,13,67.0
+Março,Gamificação,304,61,32,4,65.3
+Maio,Gamificação,408,58,34,7,68.0
+Agosto,Assinaturas,416,39,25,2,89.2
+Junho,Fórum,496,42,16,7,73.4
+Setembro,Fórum,481,40,15,9,71.5
+Novembro,Player de Vídeo,411,26,21,21,67.4
+Junho,Assinaturas,382,33,26,5,94.4
+Março,Fórum,478,38,25,6,67.3
+Outubro,Player de Vídeo,473,28,12,17,60.8
+Setembro,Player de Vídeo,405,34,10,22,68.6
+Março,Fórum,434,44,14,12,75.5
+Março,Fórum,431,30,19,6,75.0
+Julho,Fórum,452,31,15,10,67.6
+Junho,Gamificação,310,59,33,5,61.0
+Maio,Assinaturas,380,42,23,5,88.9
+Julho,Assinaturas,350,33,20,3,83.7
+Agosto,Assinaturas,367,41,26,3,94.5
+Abril,Player de Vídeo,398,25,16,13,64.9
+Outubro,Assinaturas,473,32,30,2,90.9
+Junho,Player de Vídeo,468,29,12,18,55.7
+Fevereiro,Player de Vídeo,435,36,12,12,65.5
+Abril,Gamificação,415,46,26,6,63.9
+Janeiro,Fórum,429,48,18,10,70.7
+Janeiro,Gamificação,347,62,22,4,73.2
+Outubro,Player de Vídeo,448,34,14,14,66.3
+Março,Assinaturas,413,32,19,2,82.9
+Novembro,Fórum,431,38,17,10,71.6
+Julho,Assinaturas,415,45,19,5,91.2
+Julho,Gamificação,367,47,35,5,66.0
+Novembro,Player de Vídeo,384,34,17,19,61.4
+Janeiro,Assinaturas,376,35,27,2,92.7
+Janeiro,Gamificação,401,65,28,8,66.3
+Novembro,Player de Vídeo,540,27,17,18,61.4
+Julho,Player de Vídeo,516,35,20,20,59.4
+Fevereiro,Gamificação,418,56,32,6,63.5
+Novembro,Assinaturas,378,41,24,4,94.7
+Dezembro,Fórum,478,45,18,8,74.0
+Março,Gamificação,300,48,26,3,67.8
+Fevereiro,Gamificação,396,52,33,5,69.8
+Fevereiro,Fórum,485,46,24,10,65.3
+Junho,Player de Vídeo,526,25,15,18,63.7
+Março,Assinaturas,468,33,25,2,94.5
+Dezembro,Fórum,435,44,19,10,75.2
+Janeiro,Player de Vídeo,407,34,16,15,56.0
+Agosto,Fórum,495,34,17,7,74.3
+Dezembro,Gamificação,320,49,20,5,72.1
+Agosto,Player de Vídeo,453,30,21,18,56.6
+Julho,Player de Vídeo,389,38,10,17,57.8
+Março,Gamificação,340,55,30,3,65.6
+Julho,Assinaturas,427,37,30,2,83.6
+Abril,Fórum,394,32,24,6,67.2
+Junho,Fórum,482,48,23,10,74.5
+Setembro,Assinaturas,440,31,19,2,92.8
+Julho,Player de Vídeo,395,33,12,21,66.5
+Outubro,Assinaturas,459,44,22,5,94.5
+Julho,Fórum,420,44,15,8,76.2
+Setembro,Gamificação,365,52,29,4,72.6
+Junho,Fórum,434,30,18,9,67.4
+Agosto,Player de Vídeo,472,30,18,17,65.4
+Julho,Fórum,366,46,15,9,66.4
+Junho,Player de Vídeo,435,31,20,22,69.9
+Fevereiro,Assinaturas,430,36,24,4,88.5
+Abril,Player de Vídeo,434,32,20,16,57.5
+Abril,Fórum,383,44,23,12,73.1
+Abril,Gamificação,358,61,20,3,64.9
+Maio,Player de Vídeo,400,36,17,18,63.4
+Junho,Gamificação,394,48,24,6,69.6
+Setembro,Gamificação,384,64,25,5,65.7
+Junho,Player de Vídeo,476,33,15,17,67.1
+Março,Player de Vídeo,532,27,21,12,55.7
+Março,Player de Vídeo,509,27,13,15,62.9
+Novembro,Assinaturas,350,36,29,2,89.9
+Novembro,Gamificação,336,45,21,5,63.2
+Outubro,Player de Vídeo,488,31,20,14,55.6
+Janeiro,Fórum,432,48,17,12,68.0
+Janeiro,Assinaturas,490,44,22,2,92.0
+Junho,Assinaturas,434,36,29,2,83.2
+Março,Player de Vídeo,425,31,13,17,64.3
+Janeiro,Assinaturas,490,44,25,4,91.6
+Setembro,Fórum,482,31,26,7,70.4
+Outubro,Gamificação,405,56,25,8,61.1
+Outubro,Assinaturas,354,35,26,3,85.9
+Janeiro,Assinaturas,384,45,25,5,84.4
+Setembro,Assinaturas,364,32,28,5,86.9
+Outubro,Fórum,470,48,23,8,74.5
+Dezembro,Gamificação,371,51,25,8,65.3
+Novembro,Gamificação,375,46,32,3,64.5
+Fevereiro,Assinaturas,482,45,27,4,89.0
+Abril,Gamificação,400,52,25,5,71.6
+Setembro,Player de Vídeo,442,31,17,22,61.7
+Outubro,Gamificação,307,58,27,4,61.8
+Março,Player de Vídeo,521,32,13,22,62.8
+Março,Assinaturas,395,35,29,2,90.5
+Agosto,Player de Vídeo,392,34,12,16,68.5
+Abril,Fórum,456,34,23,10,68.5
+Maio,Assinaturas,357,38,26,2,86.3
+Maio,Fórum,420,46,16,10,72.6
+Agosto,Gamificação,334,62,20,6,63.1
+Setembro,Fórum,462,48,22,11,71.3
+Fevereiro,Assinaturas,404,42,30,4,92.0
+Dezembro,Gamificação,322,61,25,3,61.6
+Novembro,Fórum,421,36,22,12,77.1
+Agosto,Fórum,466,36,15,6,67.1
+Junho,Gamificação,372,62,28,8,60.2
+Setembro,Gamificação,380,63,29,4,71.3
+Janeiro,Fórum,431,38,21,12,76.7
+Novembro,Fórum,460,37,17,8,76.7
+Novembro,Gamificação,342,49,24,6,73.0
+Agosto,Fórum,379,32,20,7,71.7
+Janeiro,Player de Vídeo,476,33,11,15,69.7
+Novembro,Assinaturas,417,45,23,4,86.5
+Setembro,Fórum,481,36,22,12,74.5
+Setembro,Player de Vídeo,494,27,12,21,58.5
+Junho,Fórum,406,47,19,7,67.0
+Fevereiro,Gamificação,380,47,24,5,69.3
+Março,Fórum,469,47,14,11,67.8
+Outubro,Gamificação,386,64,34,4,65.7
+Dezembro,Gamificação,351,55,32,6,66.2
+Dezembro,Assinaturas,393,34,25,4,91.0
+Março,Player de Vídeo,438,30,18,18,69.9
+Fevereiro,Player de Vídeo,384,34,21,18,61.3
+Fevereiro,Gamificação,392,49,24,4,68.2
+Maio,Gamificação,414,55,33,4,64.6
+Fevereiro,Player de Vídeo,442,29,22,13,55.3
+Julho,Assinaturas,350,35,23,4,86.7
+Janeiro,Gamificação,321,60,33,3,74.1
+Fevereiro,Fórum,415,39,26,6,71.8
+Janeiro,Fórum,480,36,20,9,72.4
+Abril,Fórum,442,32,19,7,74.0
+Dezembro,Assinaturas,412,31,20,4,92.4
+Abril,Assinaturas,427,45,28,5,82.2
+Novembro,Fórum,454,37,19,8,66.3
+Dezembro,Player de Vídeo,405,38,19,15,68.6
+Abril,Fórum,382,32,20,7,71.9
+Maio,Player de Vídeo,398,32,18,18,66.7
+Outubro,Fórum,475,34,14,12,71.9
+Outubro,Gamificação,410,57,32,4,64.0
+Setembro,Assinaturas,448,41,20,3,84.8
+Agosto,Fórum,451,32,23,12,72.4
+Dezembro,Player de Vídeo,386,36,13,14,64.1
+Janeiro,Assinaturas,451,35,28,2,93.3
+Abril,Fórum,371,45,16,7,76.2
+Março,Fórum,373,41,17,11,75.6
+Agosto,Fórum,490,38,19,7,77.3
+Outubro,Fórum,463,34,14,8,72.0
+Dezembro,Player de Vídeo,435,34,16,17,62.6
+Dezembro,Fórum,366,33,26,7,74.7
+Maio,Fórum,383,34,20,12,71.7
+Março,Fórum,422,46,23,12,66.4
+Novembro,Gamificação,321,53,28,8,65.5
+Junho,Gamificação,307,49,24,7,74.1
+Novembro,Gamificação,327,50,34,7,73.9
+Junho,Assinaturas,408,45,28,2,88.5
+Junho,Gamificação,379,65,29,4,71.1
+Abril,Gamificação,353,64,26,5,72.3
+Abril,Assinaturas,491,34,22,4,87.6
+Agosto,Gamificação,414,53,33,5,66.1
+Dezembro,Assinaturas,389,43,20,3,94.6
+Novembro,Assinaturas,400,44,21,4,88.7
+Fevereiro,Player de Vídeo,494,33,18,16,64.5
+Dezembro,Assinaturas,436,37,22,2,90.4
+Março,Fórum,469,35,21,7,71.7
+Setembro,Gamificação,401,64,22,4,73.1
+Março,Player de Vídeo,381,36,16,17,63.9
+Abril,Player de Vídeo,488,40,12,21,60.2
+Agosto,Assinaturas,408,40,19,3,82.8
+Março,Assinaturas,495,42,23,5,91.9
+Fevereiro,Player de Vídeo,445,30,20,20,65.1
+Dezembro,Gamificação,388,57,33,7,74.3
+Abril,Assinaturas,500,34,30,5,84.8
+Novembro,Fórum,474,34,25,7,66.8
+Outubro,Assinaturas,406,36,21,2,84.4
+Janeiro,Assinaturas,381,39,22,5,93.6
+Abril,Assinaturas,389,31,22,4,88.1
+Janeiro,Fórum,364,38,26,12,75.6
+Maio,Fórum,397,36,23,9,76.6
+Maio,Fórum,482,30,17,7,66.0
+Dezembro,Player de Vídeo,462,32,19,20,68.8
+Junho,Assinaturas,413,40,21,2,85.2
+Fevereiro,Fórum,455,35,21,9,72.8
+Julho,Gamificação,366,45,27,6,73.8
+Agosto,Player de Vídeo,407,27,10,15,68.0
+Dezembro,Fórum,386,45,25,10,66.6
+Maio,Assinaturas,358,40,27,4,89.0
+Maio,Gamificação,363,47,30,8,71.0
+Novembro,Assinaturas,492,43,27,5,86.1
+Outubro,Gamificação,407,50,34,5,63.8
+Maio,Player de Vídeo,525,28,16,12,63.5
+Abril,Player de Vídeo,401,29,16,15,61.4
+Dezembro,Fórum,364,44,24,10,70.9
+Março,Gamificação,380,60,25,3,68.0
+Outubro,Fórum,360,32,21,10,76.2
+Maio,Assinaturas,448,32,23,2,93.7
+Julho,Gamificação,340,58,28,4,62.0
+Fevereiro,Assinaturas,461,30,19,2,84.2
+Agosto,Gamificação,307,58,29,5,74.6
+Fevereiro,Gamificação,373,57,25,6,68.6
+Dezembro,Player de Vídeo,519,37,15,21,64.6
+Abril,Gamificação,313,55,26,8,70.1
+Março,Player de Vídeo,497,34,12,15,59.9
+Abril,Gamificação,386,50,34,4,64.0
+Janeiro,Player de Vídeo,449,32,18,14,65.4
+Setembro,Player de Vídeo,402,32,14,15,56.7
+Fevereiro,Player de Vídeo,470,29,11,16,65.2
+Junho,Assinaturas,401,43,28,4,84.3
+Julho,Gamificação,315,48,23,4,64.4
+Agosto,Assinaturas,436,38,23,4,87.1
+Julho,Assinaturas,413,42,20,3,91.3
+Julho,Fórum,440,42,24,12,76.8
+Agosto,Gamificação,322,58,24,4,73.2
+Agosto,Gamificação,417,46,32,3,60.7
+Janeiro,Gamificação,337,54,23,6,66.4
+Outubro,Player de Vídeo,491,29,17,21,56.4
+Março,Assinaturas,386,31,26,5,89.2
+Novembro,Gamificação,413,51,31,3,70.0
+Julho,Player de Vídeo,383,38,14,14,67.6
+Maio,Assinaturas,447,43,23,2,91.5
+Setembro,Assinaturas,365,31,30,3,82.5
+Janeiro,Assinaturas,359,35,18,3,85.5
+Junho,Fórum,387,32,15,12,69.3
+Fevereiro,Assinaturas,473,40,29,3,86.3
+Maio,Gamificação,410,51,24,6,69.9
+Fevereiro,Fórum,482,31,18,7,70.0
+Dezembro,Assinaturas,405,40,25,3,83.3
+Agosto,Gamificação,401,48,27,7,66.7
+Janeiro,Gamificação,351,57,26,7,62.7
+Junho,Gamificação,408,63,30,3,74.2
+Fevereiro,Assinaturas,358,39,18,2,90.9`;
+
+function parseData(){
+  return CSV_LINES.trim().split('\n').map(l=>{
+    const p=l.split(',');
+    const mes=p[0],squad=p[1],horas=+p[2],pf=+p[3],bh=+p[4],bp=+p[5],cob=+p[6];
+    const total=bh+bp;
+    return{mes,squad,horas,pf,bugsHom:bh,bugsProd:bp,cobertura:cob,
+      produtividade:horas/pf,
+      densidadeDefeitos:total/pf,
+      dre:total>0?(bh/total)*100:100
+    };
+  });
+}
+
+const allData=parseData();
+
+// populate month filter
+const months=[...new Set(allData.map(d=>d.mes))].sort((a,b)=>MONTH_ORDER.indexOf(a)-MONTH_ORDER.indexOf(b));
+const sel=document.getElementById('filterMes');
+months.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);});
+
+let charts={};
+function getFiltered(){
+  const mes=document.getElementById('filterMes').value;
+  const squad=document.getElementById('filterSquad').value;
+  return allData.filter(d=>(!mes||d.mes===mes)&&(!squad||d.squad===squad));
+}
+const avg=arr=>arr.length?arr.reduce((a,b)=>a+b,0)/arr.length:0;
+const sum=arr=>arr.reduce((a,b)=>a+b,0);
+function groupBy(data,key){return data.reduce((acc,d)=>{(acc[d[key]]=acc[d[key]]||[]).push(d);return acc;},{});}
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function updateKPIs(data){
+  const totalPF=sum(data.map(d=>d.pf));
+  const avgDRE=avg(data.map(d=>d.dre));
+  const totalBugs=sum(data.map(d=>d.bugsProd));
+  const avgProd=avg(data.map(d=>d.produtividade));
+  document.getElementById('kpi-pf').textContent=totalPF.toLocaleString('pt-BR');
+  const dreEl=document.getElementById('kpi-dre');
+  dreEl.textContent=avgDRE.toFixed(1)+'%';
+  dreEl.style.color=avgDRE>=85?'var(--squad1)':avgDRE>=70?'var(--squad4)':'var(--squad2)';
+  document.getElementById('kpi-bugs').textContent=totalBugs.toLocaleString('pt-BR');
+  document.getElementById('kpi-prod').textContent=avgProd.toFixed(1);
+}
+
+function buildProdChart(data){
+  destroyChart('prod');
+  const bySquad=groupBy(data,'squad');
+  const labels=SQUADS.filter(s=>bySquad[s]);
+  const vals=labels.map(s=>avg(bySquad[s].map(d=>d.produtividade)));
+  const colors=labels.map(s=>SQUAD_COLORS[s]);
+  charts['prod']=new Chart(document.getElementById('chartProd'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'Horas/PF',data:vals,backgroundColor:colors.map(c=>c+'33'),borderColor:colors,borderWidth:2,borderRadius:6}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y.toFixed(1)} h/PF`}}},
+      scales:{x:{ticks:{color:'#6b7590'},grid:{color:'#252a38'}},y:{ticks:{color:'#6b7590'},grid:{color:'#252a38'},title:{display:true,text:'Horas/PF',color:'#6b7590'}}}}
+  });
+}
+
+function buildDreCobChart(data){
+  destroyChart('drecob');
+  const bySquad=groupBy(data,'squad');
+  const labels=SQUADS.filter(s=>bySquad[s]);
+  charts['drecob']=new Chart(document.getElementById('chartDreCob'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {type:'bar',label:'DRE (%)',data:labels.map(s=>avg(bySquad[s].map(d=>d.dre))),
+        backgroundColor:labels.map(s=>SQUAD_COLORS[s]+'44'),borderColor:labels.map(s=>SQUAD_COLORS[s]),borderWidth:2,borderRadius:6,yAxisID:'y'},
+      {type:'line',label:'Cobertura (%)',data:labels.map(s=>avg(bySquad[s].map(d=>d.cobertura))),
+        borderColor:'#ffffff88',pointBackgroundColor:labels.map(s=>SQUAD_COLORS[s]),pointRadius:6,tension:0.4,yAxisID:'y2'},
+      {type:'line',label:'Meta DRE 85%',data:labels.map(()=>85),
+        borderColor:'#ff6b3588',borderDash:[6,4],pointRadius:0,borderWidth:1.5,yAxisID:'y'}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#6b7590',font:{family:'DM Sans',size:11}}}},
+      scales:{
+        x:{ticks:{color:'#6b7590'},grid:{color:'#252a38'}},
+        y:{ticks:{color:'#6b7590'},grid:{color:'#252a38'},title:{display:true,text:'DRE%',color:'#6b7590'},min:0,max:100},
+        y2:{position:'right',ticks:{color:'#6b7590'},grid:{display:false},title:{display:true,text:'Cob%',color:'#6b7590'},min:0,max:100}
+      }}
+  });
+}
+
+function buildBugsPie(data){
+  destroyChart('bugspie');
+  const bySquad=groupBy(data,'squad');
+  const labels=SQUADS.filter(s=>bySquad[s]);
+  const vals=labels.map(s=>sum(bySquad[s].map(d=>d.bugsProd)));
+  charts['bugspie']=new Chart(document.getElementById('chartBugsPie'),{
+    type:'doughnut',
+    data:{labels,datasets:[{data:vals,backgroundColor:labels.map(s=>SQUAD_COLORS[s]+'bb'),borderColor:labels.map(s=>SQUAD_COLORS[s]),borderWidth:2,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{color:'#e8ecf4',font:{family:'DM Sans',size:12},padding:16}},
+        tooltip:{callbacks:{label:ctx=>{const total=sum(vals);return `${ctx.label}: ${ctx.parsed} bugs (${(ctx.parsed/total*100).toFixed(1)}%)`;}}}}
+    }
+  });
+}
+
+function buildScatter(data){
+  destroyChart('scatter');
+  const bySquad=groupBy(data,'squad');
+  const datasets=SQUADS.filter(s=>bySquad[s]).map(s=>({
+    label:s,
+    data:bySquad[s].map(d=>({x:d.pf,y:d.densidadeDefeitos,r:Math.max(4,d.cobertura/15)})),
+    backgroundColor:SQUAD_COLORS[s]+'88',borderColor:SQUAD_COLORS[s],borderWidth:1.5
+  }));
+  charts['scatter']=new Chart(document.getElementById('chartScatter'),{
+    type:'bubble',data:{datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#6b7590',font:{family:'DM Sans',size:11}}}},
+      scales:{
+        x:{ticks:{color:'#6b7590'},grid:{color:'#252a38'},title:{display:true,text:'PF Entregues',color:'#6b7590'}},
+        y:{ticks:{color:'#6b7590'},grid:{color:'#252a38'},title:{display:true,text:'Densidade Defeitos',color:'#6b7590'}}
+      }}
+  });
+}
+
+function buildDensityChart(data){
+  destroyChart('density');
+  const byMes=groupBy(data,'mes');
+  const sortedMonths=Object.keys(byMes).sort((a,b)=>MONTH_ORDER.indexOf(a)-MONTH_ORDER.indexOf(b));
+  const datasets=SQUADS.map(s=>({
+    label:s,
+    data:sortedMonths.map(m=>{const rows=(byMes[m]||[]).filter(d=>d.squad===s);return rows.length?avg(rows.map(d=>d.densidadeDefeitos)):null;}),
+    borderColor:SQUAD_COLORS[s],backgroundColor:SQUAD_COLORS[s]+'22',tension:0.4,fill:false,pointRadius:4,spanGaps:true
+  }));
+  charts['density']=new Chart(document.getElementById('chartDensity'),{
+    type:'line',data:{labels:sortedMonths,datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#e8ecf4',font:{family:'DM Sans',size:12},padding:14}}},
+      scales:{
+        x:{ticks:{color:'#6b7590',maxRotation:45},grid:{color:'#252a38'}},
+        y:{ticks:{color:'#6b7590'},grid:{color:'#252a38'},title:{display:true,text:'Dens. Defeitos = (BugsHom+BugsProd)/PF',color:'#6b7590'}}
+      }}
+  });
+}
+
+let sortCol=-1,sortAsc=true;
+function buildTable(data){
+  document.getElementById('row-count').textContent=data.length+' linhas';
+  const tbody=document.getElementById('tableBody');
+  tbody.innerHTML='';
+  data.forEach(d=>{
+    const tr=document.createElement('tr');
+    const maxDens=2.5;
+    const barW=Math.min(60,(d.densidadeDefeitos/maxDens)*60);
+    const dreClass=d.dre>=85?'dre-ok':d.dre>=70?'dre-warn':'dre-bad';
+    tr.innerHTML=`
+      <td>${d.mes}</td>
+      <td><span class="squad-pill ${PILL_MAP[d.squad]}">${d.squad}</span></td>
+      <td class="num">${d.horas}</td>
+      <td class="num">${d.pf}</td>
+      <td class="num">${d.bugsHom}</td>
+      <td class="num">${d.bugsProd}</td>
+      <td class="num">${d.cobertura.toFixed(1)}%</td>
+      <td class="num">${d.produtividade.toFixed(1)}</td>
+      <td class="num">${d.densidadeDefeitos.toFixed(2)}<span class="bar-inline" style="width:${barW}px;background:${d.densidadeDefeitos>1.5?'#ff6b35':'#00e5a0'}"></span></td>
+      <td class="num ${dreClass}">${d.dre.toFixed(1)}%</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function sortTable(col){
+  const data=getFiltered();
+  const keys=['mes','squad','horas','pf','bugsHom','bugsProd','cobertura','produtividade','densidadeDefeitos','dre'];
+  if(sortCol===col)sortAsc=!sortAsc;else{sortCol=col;sortAsc=true;}
+  data.sort((a,b)=>{const va=a[keys[col]],vb=b[keys[col]];if(typeof va==='string')return sortAsc?va.localeCompare(vb):vb.localeCompare(va);return sortAsc?va-vb:vb-va;});
+  buildTable(data);
+}
+
+function update(){
+  const data=getFiltered();
+  updateKPIs(data);
+  buildProdChart(data);
+  buildDreCobChart(data);
+  buildBugsPie(data);
+  buildScatter(data);
+  buildDensityChart(data);
+  buildTable(data);
+}
+
+function resetFilters(){
+  document.getElementById('filterMes').value='';
+  document.getElementById('filterSquad').value='';
+  update();
+}
+
+// Atualiza o dashboard quando o usuário altera os filtros
+document.getElementById('filterMes').addEventListener('change', update);
+document.getElementById('filterSquad').addEventListener('change', update);
+
+Chart.defaults.color='#6b7590';
+Chart.defaults.font.family='DM Sans';
+Chart.defaults.borderColor='#252a38';
+update();
+</script>
+</body>
+</html>
