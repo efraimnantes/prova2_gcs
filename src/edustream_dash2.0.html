@@ -76,7 +76,10 @@
     <div class="logo">Edu<span>Stream</span> Analytics</div>
     <div class="subtitle">Estudo de Caso 4 — Medição de Software · Grupo 12 · Efraim Nantes, Thiago Nogueira, Pedro Henrique Mendes</div>
   </div>
+  <div style="display:flex; align-items:center; gap:12px;">
   <div class="badge">300 registros · 4 squads</div>
+  <button class="btn-reset" onclick="logout()">Sair</button>
+</div>
 </header>
 <div class="filters-bar">
   <div class="filter-group">
@@ -706,6 +709,10 @@ Chart.defaults.color='#6b7590';
 Chart.defaults.font.family='DM Sans';
 Chart.defaults.borderColor='#252a38';
 update();
+  function logout() {
+  sessionStorage.removeItem("edustreamLoggedIn");
+  window.location.href = "login.html";
+}
 </script>
 </body>
 </html>
