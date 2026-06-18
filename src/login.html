@@ -162,7 +162,20 @@
       const mensagemErro = document.getElementById("mensagemErro");
 
       if (email === "admin@edustream.com" && senha === "123456") {
-        sessionStorage.setItem("edustreamLoggedIn", "true");
+        window.location.href = "edustream_dash2.0.html";
+      } else {
+        mensagemErro.style.display = "block";
+      }
+    }
+   <script>
+    function validarLogin(event) {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("senha").value;
+      const mensagemErro = document.getElementById("mensagemErro");
+
+      if (email === "admin@edustream.com" && senha === "123456") {
         window.location.href = "edustream_dash2.0.html";
       } else {
         mensagemErro.style.display = "block";
@@ -170,9 +183,4 @@
     }
   </script>
 </body>
-  <script>
-  if (sessionStorage.getItem("edustreamLoggedIn") !== "true") {
-    window.location.href = "login.html";
-  }
-</script>
 </html>
